@@ -1,0 +1,13 @@
+
+######### STM32CubeIDE generated #########
+.metadata/
+*.log
+*.scratch
+
+# Outputs
+Debug/
+Release/
+
+# User preferences
+.settings/
+*.launch
