@@ -1,4 +1,4 @@
-#include "RCFilter.h"
+#include <RCfilter.h>
 
 void RCFilter_Init(RCFilter *filt, float cutoffFreqHz, float sampleTimeS) {
 
