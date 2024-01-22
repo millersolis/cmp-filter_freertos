@@ -23,6 +23,7 @@
 #define 	BUS_TIMEOUT			100		//ms
 
 #define 	mG_TO_MPS2			0.00980665f
+#define 	mDEG_TO_DEG			0.001f
 
 
 static int32_t BSP_AccGyr_WriteReg(void *handle, uint8_t reg, const uint8_t *bufp,
@@ -115,20 +116,49 @@ _Bool BSP_Acc_GetData (Acc_Data_t *acc)
 	if (reg.status_reg.xlda) {
 		/* Read acceleration field data */
 		memset(data_raw_acceleration, 0x00, 3 * sizeof(int16_t));
+		lsm6dsm_acceleration_raw_get(&dev_ctx, data_raw_acceleration);
 
 		/* Convert to mG */
-		lsm6dsm_acceleration_raw_get(&dev_ctx, data_raw_acceleration);
-		acceleration_mg[0] =
-		lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[0]);
-		acceleration_mg[1] =
-		lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[1]);
-		acceleration_mg[2] =
-		lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[2]);
+		acceleration_mg[0] = lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[0]);
+		acceleration_mg[1] = lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[1]);
+		acceleration_mg[2] = lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[2]);
 
 		/* Convert to m/s^2 */
 		acc->x = acceleration_mg[0] * mG_TO_MPS2;
 		acc->y = acceleration_mg[1] * mG_TO_MPS2;
 		acc->z = acceleration_mg[2] * mG_TO_MPS2;
+
+		ret = true;
+	}
+
+	return ret;
+}
+
+_Bool BSP_Gyro_GetData (Gyro_Data_t *gyro)
+{
+	static int16_t data_raw_angular_rate[3];
+	static float angular_rate_mdps[3];
+	static lsm6dsm_reg_t reg;
+
+	_Bool ret = false;
+
+	/* Read output only if new value is available */
+	lsm6dsm_status_reg_get(&dev_ctx, &reg.status_reg);
+
+	if (reg.status_reg.gda) {
+		/* Read angular rate field data */
+		memset(data_raw_angular_rate, 0x00, 3 * sizeof(int16_t));
+		lsm6dsm_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate);
+
+		/* Convert to mdeg/s */
+		angular_rate_mdps[0] = lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
+		angular_rate_mdps[1] = lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
+		angular_rate_mdps[2] = lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
+
+		/* Convert to deg/s  */
+		gyro->p = angular_rate_mdps[0] * mDEG_TO_DEG;
+		gyro->q = angular_rate_mdps[1] * mDEG_TO_DEG;
+		gyro->r = angular_rate_mdps[2] * mDEG_TO_DEG;
 
 		ret = true;
 	}

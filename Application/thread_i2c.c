@@ -10,6 +10,7 @@
 #include "thread_i2c.h"
 #include "i2c.h"
 #include "bsp_accGyr.h"
+#include "bsp_terminal.h"	//temp for testing
 #include <printf/printf.h>
 
 #include <FreeRTOS.h>
@@ -82,23 +83,41 @@ void Thread_I2C_Start(void)
 
 }
 
-void test(void)
+void test_acc(void)
 {
 	static uint8_t tx_buffer[1000];
 	static Acc_Data_t acc_dat;
 
 
 	for (int i = 0; ; i++) {
-	BSP_Acc_GetData(&acc_dat);
+		BSP_Acc_GetData(&acc_dat);
 
-	sprintf_((char *)tx_buffer,
-		  "x=%4.2f,y=%4.2f,z=%4.2f\r\n",
-		  acc_dat.x, acc_dat.y, acc_dat.z);
+		sprintf_((char *)tx_buffer,
+			  "x=%4.2f,y=%4.2f,z=%4.2f\r\n",
+			  acc_dat.x, acc_dat.y, acc_dat.z);
 
-#include "bsp_terminal.h"
-	tx_com(tx_buffer, strlen((char const *)tx_buffer));
+		tx_com(tx_buffer, strlen((char const *)tx_buffer));
 
-	vTaskDelay(100);
+		vTaskDelay(100);
+	}
+}
+
+void test_gyro(void)
+{
+	static uint8_t tx_buffer[1000];
+	static Gyro_Data_t gyro_dat;
+
+
+	for (int i = 0; ; i++) {
+		BSP_Gyro_GetData(&gyro_dat);
+
+		sprintf_((char *)tx_buffer,
+			  "p=%4.2f,q=%4.2f,r=%4.2f\r\n",
+			  gyro_dat.p, gyro_dat.q, gyro_dat.r);
+
+		tx_com(tx_buffer, strlen((char const *)tx_buffer));
+
+		vTaskDelay(100);
 	}
 }
 //void poll_samples (void)
@@ -171,7 +190,8 @@ static void Thread_I2C_Run(void *args)
 	BSP_AccGyr_Init();
 
 	 // test
-	test();
+//	test_acc();
+	test_gyro();
 }
 
 static _Bool waitForNotify(uint32_t ms)
