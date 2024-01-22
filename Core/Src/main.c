@@ -26,13 +26,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <math.h>
 
-#include "../../Drivers/lsm6dsm/lsm6dsm_reg.h"
+#include "lsm6dsm_reg.h"
 #include "RCFilter.h"
 #include "app.h"
+#include <printf/printf.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -81,6 +81,51 @@ static void platform_init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+// This allows us to use printf() to send messages via the SWD interface
+// Reference:
+// http://www.embedded-communication.com/en/misc/english-printf-using-st-link-debug-interface-swd-itm-view/
+int __io_putchar(int ch) {
+    // Catch usage of stdlib printf() in debugger
+    Error_Handler();
+    //ITM_SendChar(ch);
+    return ch;
+}
+
+// Needed for the tiny printf() by Marco Paland
+// See: printf-6.0.0/src/printf.h
+void putchar_(char c)
+{
+    ITM_SendChar(c);
+}
+
+#if 1
+// To help ensure that no dynamic memory allocation occurs in this
+// application, define dummy implementations of malloc() and free().
+// If another definition of these functions somehow appears somewhere,
+// the linker should complain.
+// These functions also halt the system when called, to assist in
+// debugging and finding the point where they were called.
+void *malloc(size_t size)
+{
+	(void)size;
+    Error_Handler();
+    return NULL;
+}
+
+void free(void *ptr)
+{
+	(void)ptr;
+    Error_Handler();
+}
+
+void *_sbrk(ptrdiff_t incr)
+{
+	(void)incr;
+    Error_Handler();
+    return NULL;
+}
+#endif
 
 void lsm6dsm_read_data_polling(void)
 {
@@ -147,7 +192,7 @@ void lsm6dsm_read_data_polling(void)
         lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[1]);
       acceleration_mg[2] =
         lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[2]);
-      sprintf((char *)tx_buffer,
+      sprintf_((char *)tx_buffer,
               "Acceleration [mg]:%4.2f\t%4.2f\t%4.2f\r\n",
               acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
       tx_com(tx_buffer, strlen((char const *)tx_buffer));
@@ -163,7 +208,7 @@ void lsm6dsm_read_data_polling(void)
         lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
       angular_rate_mdps[2] =
         lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
-      sprintf((char *)tx_buffer,
+      sprintf_((char *)tx_buffer,
               "Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
               angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
       tx_com(tx_buffer, strlen((char const *)tx_buffer));
@@ -175,7 +220,7 @@ void lsm6dsm_read_data_polling(void)
       lsm6dsm_temperature_raw_get(&dev_ctx, &data_raw_temperature);
       temperature_degC = lsm6dsm_from_lsb_to_celsius(
                            data_raw_temperature);
-      sprintf((char *)tx_buffer,
+      sprintf_((char *)tx_buffer,
               "Temperature [degC]:%6.2f\r\n",
               temperature_degC);
       tx_com(tx_buffer, strlen((char const *)tx_buffer));
@@ -255,6 +300,8 @@ int main(void)
 //  lsm6dsm_read_data_polling();
 //  acc_angle_estimate();
   App_Start();
+
+  printf_("Calling FreeRTOS scheduler\n");
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */

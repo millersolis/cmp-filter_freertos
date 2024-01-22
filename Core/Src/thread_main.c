@@ -7,13 +7,13 @@
 
 #include "thread_main.h"
 #include "usart.h"
+#include <printf/printf.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
 
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>		// replace by embedded static implementation tiny printf() by Marco Paland
 
 
 #define MAIN_STACK_DEPTH		(8 * 1024)
@@ -55,7 +55,7 @@ void test_oscilloscope(void)
 	static uint8_t tx_buffer[1000];
 
 	for (int i = 0; ; i++) {
-		  sprintf((char *)tx_buffer,
+		sprintf_((char *)tx_buffer,
 				  "%4.2f,%4.2f,%4.2f\r",
 				  (double)(i%100), (double)(i%100), (double)(i%100));
 		  tx_com(tx_buffer, strlen((char const *)tx_buffer));
