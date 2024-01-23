@@ -23,7 +23,7 @@ static void test_rx_q(AccGyro_Msg_t data)
 	static uint8_t tx_buffer[1000];
 	static Gyro_Data_t gyro_dat;
 
-	gyro_dat = data.gyro;
+	gyro_dat = data.gyro_degps;
 
 	sprintf_((char *)tx_buffer,
 		  "p=%4.2f,q=%4.2f,r=%4.2f\r\n",

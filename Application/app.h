@@ -11,9 +11,9 @@
 #include "bsp_accGyr.h"
 
 typedef struct {
-	Acc_Data_t 		acc;
-	Gyro_Data_t 	gyro;
-	uint32_t 		timestamp;	// ms
+	Acc_Data_t 		acc_mps2;
+	Gyro_Data_t 	gyro_degps;
+	uint32_t 		timestamp_ms;	// ms
 	_Bool			dataOK_flag;
 }AccGyro_Msg_t;
 

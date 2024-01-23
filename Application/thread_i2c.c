@@ -26,7 +26,7 @@
 
 //----------------------------------------------------------------------
 // Defines
-#define ACCGYR_SAMPLE_INTERVAL_MS		100//ms -> 10Hz
+#define ACCGYR_SAMPLE_INTERVAL_MS		20//ms -> 50Hz
 #define pdTICKS_TO_MS(ticks)	((TickType_t)(ticks) * (1000U/configTICK_RATE_HZ))
 
 //----------------------------------------------------------------------
@@ -209,22 +209,23 @@ static void handleMsg(msg_t msg)
 
 	    	accGyrSensorMsgWaiting = false;
 
-	    	data_app.timestamp = pdTICKS_TO_MS(xTaskGetTickCount());
+	    	data_app.timestamp_ms = pdTICKS_TO_MS(xTaskGetTickCount());
 
-	    	_Bool success = BSP_AccGyr_GetData(&(data_app.acc), &(data_app.gyro));
+	    	// Get both acc and gyro data as close in time as possible
+	    	_Bool success = BSP_AccGyr_GetData(&(data_app.acc_mps2), &(data_app.gyro_degps));
 
 	    	if (!success) {
 	    		// set error flag
 	    		data_app.dataOK_flag = false;
 
 	    		// Make corrupted data easier to spot
-	    		data_app.acc.x = -999.0f;
-	    		data_app.acc.y = -999.0f;
-	    		data_app.acc.z = -999.0f;
+	    		data_app.acc_mps2.x = -999.0f;
+	    		data_app.acc_mps2.y = -999.0f;
+	    		data_app.acc_mps2.z = -999.0f;
 
-	    		data_app.gyro.p = -999.0f;
-	    		data_app.gyro.q = -999.0f;
-	    		data_app.gyro.r = -999.0f;
+	    		data_app.gyro_degps.p = -999.0f;
+	    		data_app.gyro_degps.q = -999.0f;
+	    		data_app.gyro_degps.r = -999.0f;
 	    	}
 	    	else {
 	    		// unset error flag

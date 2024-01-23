@@ -20,10 +20,10 @@
 //----------------------------------------------------------------------
 // Defines
 #define		BOOT_TIME          	15 		//ms
-#define 	BUS_TIMEOUT			100		//ms
+#define 	BUS_TIMEOUT			15		//ms
 
 #define 	mG_TO_MPS2			0.00980665f
-#define 	mDEG_TO_DEG			0.001f
+#define 	mDEG_TO_DEG			0.00100000f
 
 //----------------------------------------------------------------------
 // Function Definitions
@@ -77,8 +77,8 @@ void BSP_AccGyr_Init(void)
 	lsm6dsm_block_data_update_set(&dev_ctx, PROPERTY_ENABLE);
 
 	/* Set Output Data Rate for Acc and Gyro */
-	lsm6dsm_xl_data_rate_set(&dev_ctx, LSM6DSM_XL_ODR_52Hz);
-	lsm6dsm_gy_data_rate_set(&dev_ctx, LSM6DSM_GY_ODR_52Hz);
+	lsm6dsm_xl_data_rate_set(&dev_ctx, LSM6DSM_XL_ODR_104Hz);
+	lsm6dsm_gy_data_rate_set(&dev_ctx, LSM6DSM_XL_ODR_104Hz);
 
 	/* Set full scale */
 	lsm6dsm_xl_full_scale_set(&dev_ctx, LSM6DSM_2g);
