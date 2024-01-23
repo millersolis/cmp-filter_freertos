@@ -277,7 +277,7 @@ static int32_t BSP_AccGyr_ReadReg(void *handle, uint8_t reg, uint8_t *bufp,
 }
 
 /*
- * @brief  platform specific delay (platform dependent)
+ * @brief  platform specific delay (platform/application dependent)
  *
  * @param  ms        delay in ms
  *
@@ -289,7 +289,7 @@ __weak void BSP_AccGyr_Delay(uint32_t ms)
 }
 
 /*
- * @brief  platform specific bus TX RX wait(platform dependent)
+ * @brief  platform specific bus TX RX wait(platform/application dependent)
  *
  * @param  ms        timeout in ms
  *

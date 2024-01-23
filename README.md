@@ -20,6 +20,8 @@ This repository contains a complementary filter implementation for the **LSM6DSM
 * Documentation: SW and HW diagrams, misc. docs and videos
 
 ### Demo
+Oscilloscope channels 1 and 2 showing real-time values for Roll and Pitch angles as the breadboard with the LSM6DSM Breakout Board is rotated in multiple directions.
+
 https://github.com/millersolis/cmp-filter_freertos/assets/73608859/ee602f95-498d-4aa4-9246-d598a94c1e12
 
 ### Hardware
