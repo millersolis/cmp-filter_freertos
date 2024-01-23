@@ -76,14 +76,16 @@ static TimerHandle_t accGyrSensorTimer = NULL;
 static StaticTimer_t accGyrSensorTimerBuffer = {};
 void accGyrSensorTimerCallback(TimerHandle_t xTimer);
 
-
+//----------------------------------------------------------------------
+// Function Definitions
 static void Thread_I2C_Run(void *args);
 static void handleMsg(msg_t msg);
 static _Bool waitForNotify(uint32_t ms);
-
 void I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c);
 void I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c);
 
+//----------------------------------------------------------------------
+// Function Implementations
 
 void Thread_I2C_Start(void)
 {
@@ -127,7 +129,7 @@ void Thread_I2C_Start(void)
 
 }
 
-void test_acc(void)
+static void test_acc(void)
 {
 	static uint8_t tx_buffer[1000];
 	static Acc_Data_t acc_dat;
@@ -146,7 +148,7 @@ void test_acc(void)
 	}
 }
 
-void test_gyro(void)
+static void test_gyro(void)
 {
 	static uint8_t tx_buffer[1000];
 	static Gyro_Data_t gyro_dat;

@@ -18,7 +18,7 @@ void App_Start(void)
 	Thread_I2C_Start();
 }
 
-void App_AccGyroSensor_Data(AccGyro_Msg_t data)
+static void test_rx_q(AccGyro_Msg_t data)
 {
 	static uint8_t tx_buffer[1000];
 	static Gyro_Data_t gyro_dat;
@@ -30,5 +30,17 @@ void App_AccGyroSensor_Data(AccGyro_Msg_t data)
 		  gyro_dat.p, gyro_dat.q, gyro_dat.r);
 
 	tx_com(tx_buffer, strlen((char const *)tx_buffer));
+}
+
+void App_AccGyroSensor_Data(AccGyro_Msg_t data)
+{
+	// Send to main thread to use for complementary filter
+	// implementation/calculations
+	Thread_Main_AccGyroSensor_Data(data);
+
+	// test
+//	test_rx_q(data);
 
 }
+
+

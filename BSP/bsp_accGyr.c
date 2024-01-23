@@ -25,20 +25,25 @@
 #define 	mG_TO_MPS2			0.00980665f
 #define 	mDEG_TO_DEG			0.001f
 
-
+//----------------------------------------------------------------------
+// Function Definitions
 static int32_t BSP_AccGyr_WriteReg(void *handle, uint8_t reg, const uint8_t *bufp,
                               uint16_t len);
 static int32_t BSP_AccGyr_ReadReg(void *handle, uint8_t reg, uint8_t *bufp,
                              uint16_t len);
 
-static void platform_init(void);
+//----------------------------------------------------------------------
+// External Variables
+extern I2C_HandleTypeDef 	hi2c2;
 
+//----------------------------------------------------------------------
+// Local Variables
 static stmdev_ctx_t 	dev_ctx;
 static uint8_t 			whoamI, rst;
-
-extern I2C_HandleTypeDef 	hi2c2;
 static I2C_HandleTypeDef* 	bus_handle;
 
+//----------------------------------------------------------------------
+// Function Implementations
 
 void BSP_AccGyr_Init(void)
 {
@@ -49,9 +54,6 @@ void BSP_AccGyr_Init(void)
 	dev_ctx.read_reg = BSP_AccGyr_ReadReg;
 	dev_ctx.handle = (void*) bus_handle;
 	dev_ctx.mdelay = BSP_AccGyr_Delay;
-
-	/* Init test platform */
-	platform_init();
 
 	/* Wait sensor boot time */
 	dev_ctx.mdelay(BOOT_TIME);
@@ -287,7 +289,12 @@ __weak void BSP_AccGyr_Delay(uint32_t ms)
 	HAL_Delay(ms);
 }
 
-// Function to wait for bus Rx and Tx complete
+/*
+ * @brief  platform specific bus TX RX wait(platform dependent)
+ *
+ * @param  ms        timeout in ms
+ *
+ */
 __weak _Bool BSP_WaitForRxTx(uint32_t ms)
 {
 	UNUSED(ms);
@@ -295,12 +302,3 @@ __weak _Bool BSP_WaitForRxTx(uint32_t ms)
 
 	return true;
 }
-/*
- * @brief  platform specific initialization (platform dependent)
- */
-static void platform_init(void)
-{
-
-}
-
-
