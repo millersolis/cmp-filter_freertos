@@ -26,6 +26,8 @@ typedef struct
 
 
 void BSP_AccGyr_Init(void);
+
+_Bool BSP_AccGyr_GetData (Acc_Data_t *acc, Gyro_Data_t *gyro);
 _Bool BSP_Acc_GetData (Acc_Data_t *acc);
 _Bool BSP_Gyro_GetData (Gyro_Data_t *gyro);
 

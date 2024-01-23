@@ -11,22 +11,29 @@
 #include "i2c.h"
 #include "bsp_accGyr.h"
 #include "bsp_terminal.h"	//temp for testing
+#include "app.h"
 #include <printf/printf.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
 #include <timers.h>
+#include <queue.h>
 
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
+#include <stdbool.h>
+
+//----------------------------------------------------------------------
+// Defines
+#define ACCGYR_SAMPLE_INTERVAL_MS		100//ms -> 10Hz
+#define pdTICKS_TO_MS(ticks)	((TickType_t)(ticks) * (1000U/configTICK_RATE_HZ))
 
 //----------------------------------------------------------------------
 // Task Defines
 #define I2C_STACK_DEPTH			(8 * 1024)
 #define I2C_TASK_NAME			("i2c")
 #define I2C_TASK_PRIO			4
-
 
 //----------------------------------------------------------------------
 // Task Local Variables
@@ -37,6 +44,31 @@ static const uint32_t 		stackDepth = I2C_STACK_DEPTH;
 static StackType_t 			stackBuffer[I2C_STACK_DEPTH];
 static StaticTask_t 		taskBuffer;
 
+//----------------------------------------------------------------------
+// Queue Local Types
+typedef enum {
+	None = 0,
+	AccGyrSensorTimerExpired,
+} I2C_Msg_ID;
+
+typedef uint8_t	msg_t;
+
+//----------------------------------------------------------------------
+// Queue Defines
+#define I2C_QUEUE_MSG_NB		8
+#define I2C_QUEUE_MSG_SIZE		(sizeof(msg_t))
+#define I2C_QUEUE_STORAGE		(I2C_QUEUE_MSG_NB * I2C_QUEUE_MSG_SIZE)
+
+//----------------------------------------------------------------------
+// Queue Local Variables
+static QueueHandle_t 	q_i2c;   							// queue handle
+static StaticQueue_t 	qbuf_i2c;  							// static queue buffer
+static uint8_t 			qs_i2c[I2C_QUEUE_STORAGE] = {0};  	// storage buffer
+
+// Flags are set to true when there are messages of the corresponding
+// type waiting in the queue. Could prevent flooding the message
+// queue with too many messages.
+_Bool accGyrSensorMsgWaiting = false;
 
 //----------------------------------------------------------------------
 // Timers Local Definitions
@@ -46,6 +78,7 @@ void accGyrSensorTimerCallback(TimerHandle_t xTimer);
 
 
 static void Thread_I2C_Run(void *args);
+static void handleMsg(msg_t msg);
 static _Bool waitForNotify(uint32_t ms);
 
 void I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c);
@@ -68,18 +101,29 @@ void Thread_I2C_Start(void)
     configASSERT(taskHandle);
 
     //-------------------------------------------------
-    // Create timers
+    // Create timer
 
     // Timer to sample acc and gyr data
     accGyrSensorTimer = xTimerCreateStatic(
                 "i2c_ReadAccGyrSensor",
-                pdMS_TO_TICKS(2000),
+                pdMS_TO_TICKS(ACCGYR_SAMPLE_INTERVAL_MS),
                 pdTRUE,
 				(void *) 0,
 				accGyrSensorTimerCallback,
                 &accGyrSensorTimerBuffer);
 
     configASSERT(accGyrSensorTimer);
+
+    //-------------------------------------------------
+    // Create queue
+
+    // Using queue instead of semaphore to be able to use
+    // with more timer callbacks in the future if needed.
+    q_i2c = xQueueCreateStatic(I2C_QUEUE_MSG_NB,
+    							I2C_QUEUE_MSG_SIZE,
+								&qs_i2c[0],
+								&qbuf_i2c);
+    configASSERT(q_i2c);
 
 }
 
@@ -98,7 +142,7 @@ void test_acc(void)
 
 		tx_com(tx_buffer, strlen((char const *)tx_buffer));
 
-		vTaskDelay(100);
+		vTaskDelay(pdMS_TO_TICKS(ACCGYR_SAMPLE_INTERVAL_MS));
 	}
 }
 
@@ -117,63 +161,10 @@ void test_gyro(void)
 
 		tx_com(tx_buffer, strlen((char const *)tx_buffer));
 
-		vTaskDelay(100);
+		vTaskDelay(pdMS_TO_TICKS(ACCGYR_SAMPLE_INTERVAL_MS));
 	}
 }
-//void poll_samples (void)
-//{
-//	 /* Read samples in polling mode (no int) */
-//	  while (1) {
-//	    lsm6dsm_reg_t reg;
-//	    /* Read output only if new value is available */
-//	    lsm6dsm_status_reg_get(&dev_ctx, &reg.status_reg);
-//
-//	    if (reg.status_reg.xlda) {
-//	      /* Read acceleration field data */
-//	      memset(data_raw_acceleration, 0x00, 3 * sizeof(int16_t));
-//	      lsm6dsm_acceleration_raw_get(&dev_ctx, data_raw_acceleration);
-//	      acceleration_mg[0] =
-//	        lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[0]);
-//	      acceleration_mg[1] =
-//	        lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[1]);
-//	      acceleration_mg[2] =
-//	        lsm6dsm_from_fs2g_to_mg(data_raw_acceleration[2]);
-//	      sprintf_((char *)tx_buffer,
-//	              "Acceleration [mg]:%4.2f\t%4.2f\t%4.2f\r\n",
-//	              acceleration_mg[0], acceleration_mg[1], acceleration_mg[2]);
-//	      tx_com(tx_buffer, strlen((char const *)tx_buffer));
-//	    }
-//
-//	    if (reg.status_reg.gda) {
-//	      /* Read angular rate field data */
-//	      memset(data_raw_angular_rate, 0x00, 3 * sizeof(int16_t));
-//	      lsm6dsm_angular_rate_raw_get(&dev_ctx, data_raw_angular_rate);
-//	      angular_rate_mdps[0] =
-//	        lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
-//	      angular_rate_mdps[1] =
-//	        lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
-//	      angular_rate_mdps[2] =
-//	        lsm6dsm_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
-//	      sprintf_((char *)tx_buffer,
-//	              "Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
-//	              angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
-//	      tx_com(tx_buffer, strlen((char const *)tx_buffer));
-//	    }
-//
-//	    if (reg.status_reg.tda) {
-//	      /* Read temperature data */
-//	      memset(&data_raw_temperature, 0x00, sizeof(int16_t));
-//	      lsm6dsm_temperature_raw_get(&dev_ctx, &data_raw_temperature);
-//	      temperature_degC = lsm6dsm_from_lsb_to_celsius(
-//	                           data_raw_temperature);
-//	      sprintf_((char *)tx_buffer,
-//	              "Temperature [degC]:%6.2f\r\n",
-//	              temperature_degC);
-//	      tx_com(tx_buffer, strlen((char const *)tx_buffer));
-//	    }
-//	    HAL_Delay(10);
-//	  }
-//}
+
 
 // Only a single thread to hanlde all I2C bus operations
 static void Thread_I2C_Run(void *args)
@@ -189,9 +180,64 @@ static void Thread_I2C_Run(void *args)
 	// Initialize Accel and Gyro IC
 	BSP_AccGyr_Init();
 
-	 // test
+	// Start Timer
+	if (xTimerStart(accGyrSensorTimer, pdMS_TO_TICKS(100)) != pdTRUE) {
+		Error_Handler();
+	}
+
+	//Thread message loop
+	msg_t msg;
+    while (true) {
+        if (xQueueReceive(q_i2c, &msg, pdMS_TO_TICKS(1000)) == pdTRUE) {
+            handleMsg(msg);
+        }
+    }
+
+	 // tests
 //	test_acc();
-	test_gyro();
+//	test_gyro();
+}
+
+static void handleMsg(msg_t msg)
+{
+	switch (msg) {
+
+	    case AccGyrSensorTimerExpired: {
+	    	static AccGyro_Msg_t data_app;
+
+	    	accGyrSensorMsgWaiting = false;
+
+	    	data_app.timestamp = pdTICKS_TO_MS(xTaskGetTickCount());
+
+	    	_Bool success = BSP_AccGyr_GetData(&(data_app.acc), &(data_app.gyro));
+
+	    	if (!success) {
+	    		// set error flag
+	    		data_app.dataOK_flag = false;
+
+	    		// Make corrupted data easier to spot
+	    		data_app.acc.x = -999.0f;
+	    		data_app.acc.y = -999.0f;
+	    		data_app.acc.z = -999.0f;
+
+	    		data_app.gyro.p = -999.0f;
+	    		data_app.gyro.q = -999.0f;
+	    		data_app.gyro.r = -999.0f;
+	    	}
+	    	else {
+	    		// unset error flag
+				data_app.dataOK_flag = true;
+	    	}
+
+	    	// Send data to app
+	    	App_AccGyroSensor_Data(data_app);
+	    } break;
+
+	    // Add more as needed
+
+	    default:
+	        	break;
+	}
 }
 
 static _Bool waitForNotify(uint32_t ms)
@@ -203,7 +249,15 @@ static _Bool waitForNotify(uint32_t ms)
 
 void accGyrSensorTimerCallback(TimerHandle_t xTimer)
 {
-
+	if (!accGyrSensorMsgWaiting) {
+		BaseType_t yield = pdFALSE;
+		accGyrSensorMsgWaiting = true;
+		msg_t msg = AccGyrSensorTimerExpired;
+		if (xQueueSendToBackFromISR(q_i2c, (void*)&msg, &yield) != pdTRUE) {
+			Error_Handler();
+		}
+		portYIELD_FROM_ISR(yield);
+	}
 }
 
 //----------------------------------------------------------------------
