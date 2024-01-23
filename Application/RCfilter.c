@@ -1,5 +1,8 @@
 #include <RCfilter.h>
 
+//----------------------------------------------------------------------
+// Function Implementations
+
 void RCFilter_Init(RCFilter *filt, float cutoffFreqHz, float sampleTimeS) {
 
 	/* Compute equivalent 'RC' constant from cut-off frequency */

@@ -15,6 +15,8 @@
 // Defines
 #define	SERIAL_COM				huart3
 
+//----------------------------------------------------------------------
+// Function Implementations
 
 /*
  * @brief  Send buffer to console (platform dependent)

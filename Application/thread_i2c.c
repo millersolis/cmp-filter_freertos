@@ -5,12 +5,15 @@
  *      Author: Miller Solis
  */
 
+// Thread to handle all I2C bus operations
+// NOTE: Only a single thread (this one) can handle I2C to avoid
+// 		 resource sharing and raise conditions.
+
 //----------------------------------------------------------------------
 // Includes
 #include "thread_i2c.h"
 #include "i2c.h"
 #include "bsp_accGyr.h"
-#include "bsp_terminal.h"	//temp for testing
 #include "app.h"
 #include <printf/printf.h>
 
@@ -129,46 +132,6 @@ void Thread_I2C_Start(void)
 
 }
 
-static void test_acc(void)
-{
-	static uint8_t tx_buffer[1000];
-	static Acc_Data_t acc_dat;
-
-
-	for (int i = 0; ; i++) {
-		BSP_Acc_GetData(&acc_dat);
-
-		sprintf_((char *)tx_buffer,
-			  "x=%4.2f,y=%4.2f,z=%4.2f\r\n",
-			  acc_dat.x, acc_dat.y, acc_dat.z);
-
-		tx_com(tx_buffer, strlen((char const *)tx_buffer));
-
-		vTaskDelay(pdMS_TO_TICKS(ACCGYR_SAMPLE_INTERVAL_MS));
-	}
-}
-
-static void test_gyro(void)
-{
-	static uint8_t tx_buffer[1000];
-	static Gyro_Data_t gyro_dat;
-
-
-	for (int i = 0; ; i++) {
-		BSP_Gyro_GetData(&gyro_dat);
-
-		sprintf_((char *)tx_buffer,
-			  "p=%4.2f,q=%4.2f,r=%4.2f\r\n",
-			  gyro_dat.p, gyro_dat.q, gyro_dat.r);
-
-		tx_com(tx_buffer, strlen((char const *)tx_buffer));
-
-		vTaskDelay(pdMS_TO_TICKS(ACCGYR_SAMPLE_INTERVAL_MS));
-	}
-}
-
-
-// Only a single thread to hanlde all I2C bus operations
 static void Thread_I2C_Run(void *args)
 {
 	extern I2C_HandleTypeDef hi2c2;
@@ -194,10 +157,6 @@ static void Thread_I2C_Run(void *args)
             handleMsg(msg);
         }
     }
-
-	 // tests
-//	test_acc();
-//	test_gyro();
 }
 
 static void handleMsg(msg_t msg)

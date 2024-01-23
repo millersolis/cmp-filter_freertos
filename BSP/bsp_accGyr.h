@@ -8,8 +8,12 @@
 #ifndef BSP_ACCGYR_H_
 #define BSP_ACCGYR_H_
 
+//----------------------------------------------------------------------
+// Includes
 #include <stdint.h>
 
+//----------------------------------------------------------------------
+// Type Definitions
 typedef struct
 {
 	float x;
@@ -24,19 +28,18 @@ typedef struct
 	float r;
 } Gyro_Data_t;	// in deg/s
 
-
+//----------------------------------------------------------------------
+// Function Definitions
 void BSP_AccGyr_Init(void);
 
 _Bool BSP_AccGyr_GetData (Acc_Data_t *acc, Gyro_Data_t *gyro);
 _Bool BSP_Acc_GetData (Acc_Data_t *acc);
 _Bool BSP_Gyro_GetData (Gyro_Data_t *gyro);
 
-
 //----------------------------------------------------------------------
 // Weakly Implemented in "bsp_accGyr.c"
 // To be implemented by application code
 void BSP_AccGyr_Delay(uint32_t ms);
 _Bool BSP_WaitForRxTx(uint32_t ms);
-
 
 #endif /* BSP_ACCGYR_H_ */

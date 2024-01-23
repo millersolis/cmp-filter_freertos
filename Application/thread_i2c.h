@@ -8,7 +8,8 @@
 #ifndef THREAD_I2C_H_
 #define THREAD_I2C_H_
 
-
+//----------------------------------------------------------------------
+// Function Definitions
 void Thread_I2C_Start(void);
 
 #endif /* THREAD_I2C_H_ */

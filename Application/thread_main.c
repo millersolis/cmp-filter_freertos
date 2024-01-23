@@ -182,6 +182,8 @@ static _Bool comp_filter_update(AccGyro_Msg_t data)
 	static uint32_t prev_timestamp_ms = 0;
 	static _Bool is_first_sampl = true;
 
+	_Bool ret = false;
+
 	if (data.dataOK_flag) {
 		/* Filter accelerometer data */
 		RCFilter_Update(&lpfAcc[0], data.acc_mps2.x);
@@ -199,11 +201,13 @@ static _Bool comp_filter_update(AccGyro_Msg_t data)
 
 		if (is_first_sampl) {
 			is_first_sampl = false;
-			return false;
+			ret = false;
 		}
 
-		return true;
+		ret = true;
 	}
+
+	return ret;
 }
 
 static void comp_filter_compute(inclination_t *incl)

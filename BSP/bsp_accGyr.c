@@ -16,7 +16,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-
 //----------------------------------------------------------------------
 // Defines
 #define		BOOT_TIME          	15 		//ms
